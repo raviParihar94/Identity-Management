@@ -1,0 +1,66 @@
+spring:
+  application:
+    name: iam-security-system
+
+  sql:
+    init:
+      mode: always
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/ima_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            scope:
+              - user:email
+              - read:user
+
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+
+jwt:
+  secret: "IkBI4Gv+apKNCHojkUwAK9ktiUej5L/SD2H3l5fQskd/knPmDlta6lgMI3NBGdB1z7LuuKXAx7pXKyejsH2o1g=="
+  expiration: 86400000
+  refresh-expiration: 604800000
+
+
+mfa:
+  issuer: IAM-Security-System
+
+
+cors:
+  allowed-origins: http://localhost:3000
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true
+
+logging:
+  level:
+    com.iam.security: DEBUG
+    org.springframework.security: DEBUG
