@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,13 +26,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         User user ;
         user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
-
+        String password = (user.getPassword() != null) ? user.getPassword() : "OAUTH_USER";
+        var authorities = user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority(role.getName()))
+                .collect(Collectors.toList());
         return org.springframework.security.core.userdetails.User
-                .builder()
-                .username(user.getUsername())
-                .password(user.getPassword())
-                .authorities(getAuthorities(user))
-                .accountLocked(user.isAccountLocked())
+                .withUsername(user.getEmail())
+                .password(password) // or "OAUTH_USER" if null
+                .authorities(authorities)  // ✅ REQUIRED
+                .accountLocked(false)
                 .disabled(!user.isAccountEnabled())
                 .build();
     }

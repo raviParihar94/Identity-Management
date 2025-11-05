@@ -5,47 +5,56 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Getter
-@Entity
-@Table(name = "users")
-@Data
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@Setter
+@Entity
+@Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
-public class User {
+public class User implements UserDetails {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
-    private String username;
+    @Column(unique = true)
+    private String username; // For OAuth users, this can be GitHub login name
 
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String password;
 
+
+    @Column(name = "provider")
+    private String provider; // e.g. "LOCAL", "GITHUB", "GOOGLE"
+
     @Column(name = "mfa_enabled")
-    private boolean mfaEnabled = false;
+    private boolean mfaEnabled;
 
     @Column(name = "mfa_secret")
     private String mfaSecret;
 
     @Column(name = "account_locked")
-    private boolean accountLocked = false;
+    private boolean accountLocked;
 
     @Column(name = "account_enabled")
-    private boolean accountEnabled = true;
+    private boolean accountEnabled;
 
     @Column(name = "failed_login_attempts")
-    private int failedLoginAttempts = 0;
+    private int failedLoginAttempts;
 
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
@@ -58,6 +67,9 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+    @Column(length = 512)
+    private String refreshToken; //
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -66,108 +78,22 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-
-    public void setId(Long id) {
-        this.id = id;
+    // convenience helpers
+    public void enableAccount() {
+        this.accountEnabled = true;
+        this.accountLocked = false;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public boolean isOAuthUser() {
+        return provider != null && !provider.equalsIgnoreCase("LOCAL");
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return roles.stream()
+                .map(role -> (GrantedAuthority) role::getName)
+                .collect(Collectors.toSet());
     }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
 
-    public void setMfaEnabled(boolean mfaEnabled) {
-        this.mfaEnabled = mfaEnabled;
-    }
-
-    public void setMfaSecret(String mfaSecret) {
-        this.mfaSecret = mfaSecret;
-    }
-
-    public void setAccountLocked(boolean accountLocked) {
-        this.accountLocked = accountLocked;
-    }
-
-    public void setAccountEnabled(boolean accountEnabled) {
-        this.accountEnabled = accountEnabled;
-    }
-
-    public void setFailedLoginAttempts(int failedLoginAttempts) {
-        this.failedLoginAttempts = failedLoginAttempts;
-    }
-
-    public void setLastLogin(LocalDateTime lastLogin) {
-        this.lastLogin = lastLogin;
-    }
-
-    public void setRoles(Set<Role> roles) {
-        this.roles = roles;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public boolean isMfaEnabled() {
-        return mfaEnabled;
-    }
-
-    public String getMfaSecret() {
-        return mfaSecret;
-    }
-
-    public boolean isAccountLocked() {
-        return accountLocked;
-    }
-
-    public boolean isAccountEnabled() {
-        return accountEnabled;
-    }
-
-    public int getFailedLoginAttempts() {
-        return failedLoginAttempts;
-    }
-
-    public LocalDateTime getLastLogin() {
-        return lastLogin;
-    }
-
-    public Set<Role> getRoles() {
-        return roles;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
 }

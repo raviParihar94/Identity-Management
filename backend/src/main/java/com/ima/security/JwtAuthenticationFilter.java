@@ -1,3 +1,4 @@
+
 package com.ima.security;
 
 import jakarta.servlet.FilterChain;
@@ -30,19 +31,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String username;
-
-        // Skip filtering if Authorization header is missing or invalid
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7);
-        username = jwtService.extractUsername(jwt);
+        final String jwt = authHeader.substring(7);
+        String username;
 
-        // Authenticate user if not already authenticated
+        try {
+            username = jwtService.extractUsername(jwt);
+        } catch (Exception e) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
@@ -54,12 +57,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 userDetails.getAuthorities()
                         );
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+            } else {
+                // Token expired → mark request for refresh
+                request.setAttribute("expiredToken", jwt);
+                request.setAttribute("username", username);
             }
         }
 
         filterChain.doFilter(request, response);
     }
 }
-

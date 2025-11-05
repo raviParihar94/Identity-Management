@@ -91,6 +91,7 @@ public class AuthenticationService {
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
+
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new CustomException("ERR_AUTH_001", "Invalid credentials"));
 

@@ -1,5 +1,5 @@
 // store/auth-store.ts
-import { create } from 'zustand';
+import { create } from 'zustand'; // ✅ make sure this line exists
 import { apiClient } from '@/lib/api-client';
 import { User, AuthResponse, ApiResponse } from '@/types';
 
@@ -16,6 +16,7 @@ interface AuthState {
   logout: () => void;
   setUser: (user: User | null) => void;
   checkAuth: () => void;
+  loginWithOAuth: (authResponse: AuthResponse) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -25,6 +26,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   error: null,
   accessToken: null,
 
+  // ✅ Normal username/password login
   login: async (username: string, password: string) => {
     set({ isLoading: true, error: null });
     try {
@@ -32,16 +34,12 @@ export const useAuthStore = create<AuthState>((set) => ({
         '/api/auth/login',
         { username, password }
       );
-
       const authData = response.data.data!;
-
       if (authData.mfaRequired) {
         set({ isLoading: false });
         return authData;
       }
-
       localStorage.setItem('accessToken', authData.accessToken!);
-
       set({
         user: {
           username: authData.username,
@@ -53,7 +51,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         isLoading: false,
         accessToken: authData.accessToken!,
       });
-
       return authData;
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Login failed';
@@ -62,6 +59,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
+  // ✅ Registration
   register: async (username: string, email: string, password: string) => {
     set({ isLoading: true, error: null });
     try {
@@ -69,10 +67,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         '/api/auth/register',
         { username, email, password }
       );
-
       const authData = response.data.data!;
       localStorage.setItem('accessToken', authData.accessToken!);
-
       set({
         user: {
           username: authData.username,
@@ -91,6 +87,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
+  // ✅ MFA verify
   verifyMfa: async (username: string, code: string) => {
     set({ isLoading: true, error: null });
     try {
@@ -98,10 +95,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         '/api/auth/mfa/verify',
         { username, code }
       );
-
       const authData = response.data.data!;
       localStorage.setItem('accessToken', authData.accessToken!);
-
       set({
         user: {
           username: authData.username,
@@ -120,6 +115,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
+  // ✅ Logout
   logout: () => {
     localStorage.removeItem('accessToken');
     set({
@@ -130,14 +126,32 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
   },
 
+  // ✅ Manual user setter
   setUser: (user: User | null) => {
     set({ user, isAuthenticated: !!user });
   },
 
+  // ✅ Check if already logged in
   checkAuth: () => {
     const token = localStorage.getItem('accessToken');
     if (token) {
       set({ isAuthenticated: true, accessToken: token });
     }
+  },
+
+  // ✅ OAuth Login handler (for GitHub, Google, etc.)
+  loginWithOAuth: async (authResponse: AuthResponse) => {
+    localStorage.setItem('accessToken', authResponse.accessToken!);
+    set({
+      user: {
+        username: authResponse.username,
+        email: authResponse.email,
+        roles: authResponse.roles || [],
+        mfaEnabled: authResponse.mfaEnabled,
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      accessToken: authResponse.accessToken!,
+    });
   },
 }));

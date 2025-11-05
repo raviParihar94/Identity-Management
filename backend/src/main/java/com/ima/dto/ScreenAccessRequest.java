@@ -1,13 +1,13 @@
 package com.ima.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Getter
+@Setter
 public class ScreenAccessRequest {
     @NotBlank(message = "Screen ID is required")
     private String screenId;

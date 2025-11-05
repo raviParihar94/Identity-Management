@@ -8,6 +8,8 @@ class IdentityManagementApplicationTests {
 
 	@Test
 	void contextLoads() {
+
+		System.out.println("Data called");
 	}
 
 }
