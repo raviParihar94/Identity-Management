@@ -1,7 +1,7 @@
-// lib/api-client.ts
 import axios, { AxiosError } from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+const API_URL = 'http://localhost:8080'; // Forced for debugging
 
 export const apiClient = axios.create({
   baseURL: API_URL,
@@ -31,4 +31,3 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-

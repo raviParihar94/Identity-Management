@@ -1,6 +1,8 @@
 spring:
   application:
     name: iam-security-system
+  frontend:
+    url: http://localhost:3000
 
   datasource:
     url: jdbc:mysql://localhost:3306/ima_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
@@ -49,7 +51,7 @@ spring:
             user-name-attribute: id
 
 server:
-  port: 8080
+  port: 8081
   error:
     include-message: always
     include-binding-errors: always

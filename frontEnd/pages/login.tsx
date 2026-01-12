@@ -31,22 +31,30 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
+    console.log('Login onSubmit started', data);
     try {
+      console.log('Calling login store action...');
       const response = await login(data.username, data.password);
+      console.log('Login store action returned:', response);
 
       if (response.mfaRequired) {
+        console.log('MFA required');
         setMfaUsername(data.username);
         setShowMfa(true);
         toast.info('Please enter your MFA code');
       } else {
+        console.log('Login success, redirecting...');
         toast.success('Login successful!');
         router.push('/dashboard');
       }
     } catch (error: any) {
+      console.error('Login error caught in component:', error);
       const errorCode = error.response?.data?.errorCode;
       const message = error.response?.data?.message || 'Login failed';
 
       toast.error(`${message} (${errorCode})`);
+    } finally {
+      console.log('Login onSubmit finished');
     }
   };
 
@@ -122,13 +130,13 @@ export default function LoginPage() {
 
             <div className="mt-6 grid grid-cols-2 gap-3">
               <a
-                href={`${process.env.NEXT_PUBLIC_API_URL}/oauth2/authorization/google`}
+                href="http://localhost:8080/api/oauth2/authorization/google"
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
                 Google
               </a>
               <a
-                href={`${process.env.NEXT_PUBLIC_API_URL}/oauth2/authorization/github`}
+                href="http://localhost:8080/api/oauth2/authorization/github"
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
                 GitHub

@@ -28,17 +28,22 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   // ✅ Normal username/password login
   login: async (username: string, password: string) => {
+    console.log('Store: login called', { username });
     set({ isLoading: true, error: null });
     try {
+      console.log('Store: sending API request to /api/auth/login');
       const response = await apiClient.post<ApiResponse<AuthResponse>>(
         '/api/auth/login',
         { username, password }
       );
+      console.log('Store: API response received', response);
       const authData = response.data.data!;
       if (authData.mfaRequired) {
+        console.log('Store: MFA required');
         set({ isLoading: false });
         return authData;
       }
+      console.log('Store: Login success, setting token');
       localStorage.setItem('accessToken', authData.accessToken!);
       set({
         user: {
@@ -53,6 +58,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
       return authData;
     } catch (error: any) {
+      console.error('Store: Login error', error);
       const errorMessage = error.response?.data?.message || 'Login failed';
       set({ error: errorMessage, isLoading: false });
       throw error;

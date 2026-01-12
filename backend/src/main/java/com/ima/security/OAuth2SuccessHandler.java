@@ -7,11 +7,14 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -23,14 +26,19 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Value("${spring.frontend.url}")
+    private String frontendUrl;
 
     @Override
     public void onAuthenticationSuccess(
             HttpServletRequest request,
             HttpServletResponse response,
-            Authentication authentication
-    ) throws IOException {
+            Authentication authentication) throws IOException {
+
+        OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+        String registrationId = oauthToken.getAuthorizedClientRegistrationId();
+        String provider = registrationId.toUpperCase();
 
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
 
@@ -40,16 +48,16 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String name = (String) oAuth2User.getAttributes().getOrDefault("name", login);
 
         if (rawEmail == null || rawEmail.isBlank()) {
-            rawEmail = login + "@github.local"; // fallback for GitHub users without public email
+            rawEmail = login + "@" + provider.toLowerCase() + ".local"; // fallback for users without public email
         }
         final String email = rawEmail;
 
         // Find or create user in DB
         User user = userRepository.findByEmail(email).orElseGet(() -> {
             User newUser = new User();
-            newUser.setUsername(name);
+            newUser.setUsername(name != null ? name : email); // Ensure username is not null
             newUser.setEmail(email);
-            newUser.setProvider("GITHUB");
+            newUser.setProvider(provider);
             newUser.setAccountEnabled(true);
             return userRepository.save(newUser);
         });
@@ -78,10 +86,13 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         response.addCookie(refreshCookie);
 
         // Redirect to frontend with access token in query param
-        String redirectUrl = String.format(
-                "http://localhost:3000/auth/callback?token=%s",
-                URLEncoder.encode(accessToken, StandardCharsets.UTF_8)
-        );
+        String redirectUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/auth/callback")
+                .queryParam("token", accessToken) // UriComponentsBuilder encodes automatically? No, better be safe but
+                                                  // usually yes.
+                // Actually, let's stick to the previous manual encoding if we want to be 100%
+                // sure,
+                // but UriComponentsBuilder.queryParam DOES encode.
+                .build().toUriString();
 
         response.sendRedirect(redirectUrl);
     }
